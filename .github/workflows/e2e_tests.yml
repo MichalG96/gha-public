@@ -19,20 +19,10 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Set tag for Docker image
-        run: |
-          if [ "${{ github.event_name }}" == "push" ]; then
-            echo "VERSION=develop" >> $GITHUB_ENV
-          elif [ "${{ github.event_name }}" == "pull_request" ] && { [ "${{ github.head_ref }}" == release/* ] || [ "${{ github.head_ref }}" == hotfix/* ]; }; then
-            echo "VERSION=rc" >> $GITHUB_ENV
-          else
-            exit 1
-          fi
-
       - name: Build and push Docker image to GCP artifact registry
         run: |
           echo "Building Docker image"
-          echo "VERSION=${{ env.VERSION }}"
+          echo "VERSION=develop"
           echo "COMMIT_SHA=${{ github.sha }}"
 
       - name: Create training workload
