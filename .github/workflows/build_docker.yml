@@ -9,33 +9,33 @@ permissions:
   contents: write
 
 jobs:
-#  merge-main-into-develop:
-#    runs-on: ubuntu-latest
-#
-#    steps:
-#      - name: Checkout develop branch
-#        uses: actions/checkout@v4
-#        with:
-#          ref: develop
-#
-#      - name: Set up Git
-#        run: |
-#          git config --global user.name "github-actions[bot]"
-#          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-#
-#      - name: Add main as remote tracking branch
-#        run: |
-#          git remote set-branches origin main
-#          git fetch origin main
-#
-#      - name: Merge main into develop
-#        run: git merge origin/main
-#
-#      - name: Push changes
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#        run: |
-#          git push origin develop
+  merge-main-into-develop:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout develop branch
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+
+      - name: Set up Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Add main as remote tracking branch
+        run: |
+          git remote set-branches origin main
+          git fetch origin main
+
+      - name: Merge main into develop
+        run: git merge origin/main
+
+      - name: Push changes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git push origin develop
 
   build-push-docker:
     runs-on: ubuntu-latest
