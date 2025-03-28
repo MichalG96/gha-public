@@ -38,7 +38,6 @@ jobs:
           git push origin develop
 
   build-push-docker:
-    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     env:
       PREFIX: build-
