@@ -16,8 +16,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
 
       - name: Build and push Docker image to GCP artifact registry
         run: |
