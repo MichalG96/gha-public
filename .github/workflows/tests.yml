@@ -1,0 +1,24 @@
+name: tests
+
+on:
+  pull_request:
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Mock unit tests
+        run: echo "Running unit tests"
+
+  integration-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Create training workload
+        id: create_workload
+
+        run: |
+          echo "Running integration tests"

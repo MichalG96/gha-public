@@ -1,0 +1,104 @@
+name: "Build image with semantic versioning"
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  merge-main-into-develop:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout develop branch
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+
+      - name: Set up Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Add main as remote tracking branch
+        run: |
+          git remote set-branches origin main
+          git fetch origin main
+
+      - name: Merge main into develop
+        run: git merge origin/main
+
+      - name: Push changes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git push origin develop
+
+  build-push-docker:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    env:
+      PREFIX: build-
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Establish new version
+        shell: bash
+        run: |
+          is_int() { case $1 in ''|*[!0-9]*) return 1;;esac; }
+
+          PREFIX="build-"
+
+          git fetch --prune --unshallow --tags -q || (echo "Failed to fetch tags"; exit 1)
+          LATEST_GITTAG=`git tag -l "${PREFIX}[0-9]*.[0-9]*.[0-9]*" | sort -V | tail -1 || echo "0.0.0"`
+          LATEST_GITTAG=${LATEST_GITTAG#$PREFIX}
+
+          IFS='.'
+          read -r GH_MAJOR GH_MINOR GH_PATCH <<< "$LATEST_GITTAG"
+          VERSION=$(python -c "import tomli; print(tomli.load(open('pyproject.toml', 'rb'))['project']['version'])")
+          read -r MAJOR MINOR <<< "$VERSION"
+
+          echo "Comparing versions - Github: $GH_MAJOR.$GH_MINOR.$GH_PATCH - pyproject.toml: $MAJOR.$MINOR"
+
+          CHECK_LIST=(GH_MAJOR GH_MINOR GH_PATCH MAJOR MINOR)
+          for i in "${CHECK_LIST[@]}"; do
+            if [ -z "${!i}" ]; then
+              echo "$i is empty"; exit 1
+            fi
+            if ! is_int "${!i}"; then
+              echo "$i is not a number"; exit 1
+            fi
+          done
+
+          if [ "$MAJOR" -gt "$GH_MAJOR" ] || ( [ "$MINOR" -gt "$GH_MINOR" ] && [ "$MAJOR" -ge "$GH_MAJOR" ] ); then
+              echo "New major/minor version detected, reset patch to 0"
+              PATCH=0
+          elif [ "$MAJOR" -eq "$GH_MAJOR" ] && [ "$MINOR" -eq "$GH_MINOR" ]; then
+              echo "Increment patch version normally"
+              PATCH=$((GH_PATCH+1))
+          else
+              echo "Version inconsistency: pyproject.toml version is lower than the latest Git tag"
+              exit 1
+          fi
+
+          echo "Tag used for caching: develop"
+          echo "Final Tag: $PREFIX$MAJOR.$MINOR.$PATCH"
+          echo "VERSION=$PREFIX$MAJOR.$MINOR.$PATCH" >> $GITHUB_ENV
+
+      - name: Build and push Docker image to GCP artifact registry
+        run: |
+          echo "Building image"
+          echo "VERSION=${{ env.VERSION }}"
+          echo "COMMIT_SHA=${{ github.sha }}"
+
+      - name: Tag version
+        uses: rickstaa/action-create-tag@v1
+        with:
+          tag: ${{ env.VERSION }}
