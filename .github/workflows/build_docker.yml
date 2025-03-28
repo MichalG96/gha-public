@@ -8,7 +8,7 @@ on:
 permissions:
   contents: write
 
-#jobs:
+jobs:
 #  merge-main-into-develop:
 #    runs-on: ubuntu-latest
 #
